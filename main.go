@@ -82,16 +82,11 @@ type StreamingOutputMultiCtxResponse struct {
 	ContextId           string                    `json:"contextId"`
 }
 
-type textChunk struct {
-	Text                 string `json:"text"`
-	TryTriggerGeneration bool   `json:"try_trigger_generation"`
-}
-
 type TextToSpeechInputStreamingRequest struct {
-	Text                 string            `json:"text"`
-	TryTriggerGeneration bool              `json:"try_trigger_generation"`
-	VoiceSettings        *VoiceSettings    `json:"voice_settings,omitempty"`
-	GenerationConfig     *GenerationConfig `json:"generation_config,omitempty"`
+	Text             string            `json:"text"`
+	ContextID        string            `json:"context_id,omitempty"`
+	VoiceSettings    *VoiceSettings    `json:"voice_settings,omitempty"`
+	GenerationConfig *GenerationConfig `json:"generation_config,omitempty"`
 }
 
 type WsStreamingOutputChannel chan StreamingOutputResponse
@@ -273,7 +268,9 @@ func (c *Client) StreamingRequest(TextReader chan string, AlignmentResponseChann
 	driverActive := true // Driver shut down?
 	driverError := false // Unexpected errors
 
-	url := fmt.Sprintf("%s/text-to-speech/%s/stream-input?model_id=%s", ELEVEN_BASEURL_WSS, voiceID, modelID)
+	// url := fmt.Sprintf("%s/text-to-speech/%s/stream-input?model_id=%s", ELEVEN_BASEURL_WSS, voiceID, modelID)
+	url := fmt.Sprintf("%s/text-to-speech/%s/multi-stream-input?model_id=%s&inactivity_timeout=180&sync_alignment=true", ELEVEN_BASEURL_WSS, voiceID, modelID)
+	multiCtx := cuid2.Generate()
 
 	headers := http.Header{}
 	headers.Add("Accept", "*/*")
@@ -299,8 +296,14 @@ func (c *Client) StreamingRequest(TextReader chan string, AlignmentResponseChann
 	}
 	defer conn.Close()
 
+	initReq := TextToSpeechInputMultiStreamingRequest{
+		Text:          " ",
+		ContextID:     multiCtx,
+		VoiceSettings: req.VoiceSettings,
+	}
+
 	// Send initial request
-	if err := conn.WriteJSON(req); err != nil {
+	if err := conn.WriteJSON(initReq); err != nil {
 		return err
 	}
 
@@ -372,7 +375,7 @@ InputWatcher:
 			if !ok || !driverActive {
 				break InputWatcher
 			}
-			ch := &textChunk{Text: chunk, TryTriggerGeneration: true}
+			ch := &TextToSpeechInputStreamingRequest{Text: chunk, ContextID: multiCtx}
 			if err := conn.WriteJSON(ch); err != nil {
 				errCh <- err
 				break InputWatcher
@@ -561,7 +564,7 @@ InputWatcher:
 			if !ok || !driverActive {
 				break InputWatcher
 			}
-			ch := &textChunk{Text: chunk, TryTriggerGeneration: true}
+			ch := &TextToSpeechInputStreamingRequest{Text: chunk, ContextID: ""}
 			if err := conn.WriteJSON(ch); err != nil {
 				errCh <- err
 				break InputWatcher
