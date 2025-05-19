@@ -12,6 +12,7 @@ import (
 	"io"
 	"net/http"
 	neturl "net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -263,6 +264,28 @@ func ValidateLanguageAndModel(apiKey string, voiceId string, modelName string) (
 	return true, nil
 }
 
+func debug(prefix string, args ...interface{}) {
+	parts := []string{prefix}
+	parts = append(parts, "🎲🎲🎲 ")
+
+	for _, arg := range args {
+		switch v := arg.(type) {
+		case string:
+			parts = append(parts, v)
+		default:
+			b, err := json.MarshalIndent(v, "", "  ")
+			if err != nil {
+				parts = append(parts, fmt.Sprintf("❌ json error: %v", err))
+			} else {
+				parts = append(parts, string(b))
+			}
+		}
+	}
+
+	// join with spaces (or whatever separator you like)
+	fmt.Println(strings.Join(parts, " "))
+}
+
 // Standard Websocket Request
 func (c *Client) StreamingRequest(TextReader chan string, AlignmentResponseChannel chan StreamingOutputResponse, AudioResponsePipe io.Writer, voiceID string, modelID string, req TextToSpeechInputStreamingRequest, queries ...QueryFunc) error {
 	driverActive := true // Driver shut down?
@@ -296,14 +319,14 @@ func (c *Client) StreamingRequest(TextReader chan string, AlignmentResponseChann
 	}
 	defer conn.Close()
 
-	fmt.Println("🎲🎲🎲 Connected to Eleven Labs TTS WebSocket")
+	debug("Connected to Eleven Labs TTS WebSocket")
 
 	initReq := TextToSpeechInputMultiStreamingRequest{
 		Text:      " ",
 		ContextID: multiCtx,
 	}
 
-	fmt.Println("🎲🎲🎲 Sending initialization request", "initReq", initReq)
+	debug("Sending initialization request", initReq)
 
 	// Send initial request
 	if err := conn.WriteJSON(initReq); err != nil {
