@@ -116,6 +116,7 @@ func GetUserCapacity(apiKey string) (*UserAndCapacity, error) {
 	sub := u.Subscription
 
 	return &UserAndCapacity{
+		UserID:       u.UserID,
 		Subscription: u.Subscription,
 		HasCapacity: sub.CharacterCount <= sub.CharacterLimit ||
 			sub.CanExtendCharacterLimit,
@@ -124,7 +125,6 @@ func GetUserCapacity(apiKey string) (*UserAndCapacity, error) {
 
 // API Get user
 func User(apiKey string) (*UserData, error) {
-	//uri := strings.Replace(c.API.URI, ":route", route, -1)
 	url := fmt.Sprintf("%s/user", ELEVEN_BASEURL_HTTPS)
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
@@ -158,6 +158,51 @@ func User(apiKey string) (*UserData, error) {
 	}
 
 	return &r, nil
+}
+
+func SharedVoices(apiKey string, params ListVoicesParams) (*ListVoicesResponse, error) {
+	url := fmt.Sprintf("%s/shared-voices", ELEVEN_BASEURL_HTTPS)
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("creating request: %w", err)
+	}
+	req.Header.Set("xi-api-key", apiKey)
+
+	client := &http.Client{
+		Timeout: 1 * time.Second,
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var r ListVoicesResponse
+	err = json.Unmarshal(body, &r)
+	if err != nil {
+		return nil, err
+	}
+
+	return &r, nil
+	//https://api.elevenlabs.io/v1/shared-voices
+}
+
+func ValidateLanguageAndModel(apiKey string, voiceId string) (*ListVoicesResponse, error) {
+	sv, err := SharedVoices(apiKey, ListVoicesParams{})
+	if err != nil {
+		return nil, fmt.Errorf("creating request: %w", err)
+	}
+	return sv, nil
 }
 
 // Standard Websocket Request

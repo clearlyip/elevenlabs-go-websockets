@@ -81,3 +81,70 @@ type StreamingAlignmentSegment struct {
 	CharDurationsMs  []int    `json:"charDurationsMs"`
 	Chars            []string `json:"chars"`
 }
+
+type ListVoicesParams struct {
+	PageSize            int                `url:"page_size,omitempty"` // <=100, default 30
+	Category            VoiceParamCategory `url:"category,omitempty"`  // "professional", etc.
+	Gender              string             `url:"gender,omitempty"`
+	Age                 string             `url:"age,omitempty"`
+	Accent              string             `url:"accent,omitempty"`
+	Language            string             `url:"language,omitempty"`
+	Locale              string             `url:"locale,omitempty"`
+	Search              string             `url:"search,omitempty"`
+	UseCases            string             `url:"use_cases,omitempty"`
+	Descriptives        string             `url:"descriptives,omitempty"`
+	Featured            bool               `url:"featured,omitempty"` // default false
+	MinNoticePeriodDays int                `url:"min_notice_period_days,omitempty"`
+	IncludeCustomRates  bool               `url:"include_custom_rates,omitempty"`
+	ReaderAppEnabled    bool               `url:"reader_app_enabled,omitempty"` // default false
+	OwnerID             string             `url:"owner_id,omitempty"`
+	Sort                string             `url:"sort,omitempty"`
+	Page                int                `url:"page,omitempty"` // default 0
+}
+type VoiceParamCategory string
+
+type ListVoicesResponse struct {
+	Voices     []Voice `json:"voices"`
+	HasMore    bool    `json:"has_more"`
+	LastSortID string  `json:"last_sort_id"`
+}
+
+type Voice struct {
+	PublicOwnerID                string                  `json:"public_owner_id"`
+	VoiceID                      string                  `json:"voice_id"`
+	DateUnix                     int64                   `json:"date_unix"`
+	Name                         string                  `json:"name"`
+	Accent                       string                  `json:"accent"`
+	Gender                       string                  `json:"gender"`
+	Age                          string                  `json:"age"`
+	Descriptive                  string                  `json:"descriptive"`
+	UseCase                      string                  `json:"use_case"`
+	Category                     string                  `json:"category"`
+	UsageCharacterCount1Y        int64                   `json:"usage_character_count_1y"`
+	UsageCharacterCount7D        int64                   `json:"usage_character_count_7d"`
+	PlayAPIUsageCharacterCount1Y int64                   `json:"play_api_usage_character_count_1y"`
+	ClonedByCount                int                     `json:"cloned_by_count"`
+	FreeUsersAllowed             bool                    `json:"free_users_allowed"`
+	LiveModerationEnabled        bool                    `json:"live_moderation_enabled"`
+	Featured                     bool                    `json:"featured"`
+	Language                     string                  `json:"language"`
+	Locale                       string                  `json:"locale"`
+	Description                  string                  `json:"description"`
+	PreviewURL                   string                  `json:"preview_url"`
+	Rate                         float64                 `json:"rate"`
+	FiatRate                     float64                 `json:"fiat_rate"`
+	VerifiedLanguages            []VoiceVerifiedLanguage `json:"verified_languages"`
+	NoticePeriod                 int                     `json:"notice_period"`
+	InstagramUsername            string                  `json:"instagram_username"`
+	TwitterUsername              string                  `json:"twitter_username"`
+	YouTubeUsername              string                  `json:"youtube_username"`
+	TikTokUsername               string                  `json:"tiktok_username"`
+	ImageURL                     string                  `json:"image_url"`
+	IsAddedByUser                bool                    `json:"is_added_by_user"`
+}
+
+type VoiceVerifiedLanguage struct {
+	Language string `json:"language"`
+	ModelID  string `json:"model_id"`
+	Accent   string `json:"accent"`
+}
