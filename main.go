@@ -198,7 +198,7 @@ func SharedVoices(apiKey string, params ListVoicesParams) (*ListVoicesResponse, 
 }
 
 func ValidateLanguageAndModel(apiKey string, voiceId string) (*ListVoicesResponse, error) {
-	sv, err := SharedVoices(apiKey, ListVoicesParams{})
+	sv, err := SharedVoices(apiKey, ListVoicesParams{Search: voiceId})
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
 	}
