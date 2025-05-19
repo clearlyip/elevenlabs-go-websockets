@@ -338,3 +338,18 @@ type GetVoiceVoiceVerification struct {
 	Language                  *string                       `json:"language"`
 	VerificationAttempts      []GetVoiceVerificationAttempt `json:"verification_attempts"`
 }
+type TextToSpeechInputMultiStreamingRequest struct {
+	ContextID                       string                          `json:"context_id,omitempty"`
+	CloseContext                    bool                            `json:"close_context,omitempty"`
+	CloseSocket                     bool                            `json:"close_socket,omitempty"`
+	Text                            string                          `json:"text,omitempty"`
+	Flush                           bool                            `json:"flush,omitempty"`
+	VoiceSettings                   *VoiceSettings                  `json:"voice_settings,omitempty"`
+	GenerationConfig                *GenerationConfig               `json:"generation_config,omitempty"`
+	PronunciationDictionaryLocators PronunciationDictionaryLocators `json:"pronunciation_dictionary_locators,omitempty"`
+}
+
+type PronunciationDictionaryLocators struct {
+	DictionaryId string `json:"dictionary_id"`
+	VersionId    string `json:"version_id"`
+}

@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	"github.com/nrednav/cuid2"
 )
 
 const JSON_CONTENT_TYPE = "application/json"
@@ -25,11 +26,19 @@ const MULTI_CONTEXT_MAX_REQUESTS = 5
 const STD_MAX_REQUESTS = 1
 
 type Client struct {
-	apiKey         string
-	timeout        time.Duration
-	ctx            context.Context
-	activeRequests map[string]struct{} // Active multi-context requests
-	cmu            sync.RWMutex
+	apiKey  string
+	timeout time.Duration
+	ctx     context.Context
+}
+
+type MultiClient struct {
+	apiKey                   string
+	timeout                  time.Duration
+	ctx                      context.Context
+	activeRequests           map[string]struct{} // Active multi-context requests
+	cmu                      sync.RWMutex
+	TextReader               chan string
+	AlignmentResponseChannel chan StreamingOutputMultiCtxResponse
 }
 
 type VoiceSettings struct {
@@ -85,14 +94,6 @@ type TextToSpeechInputStreamingRequest struct {
 	GenerationConfig     *GenerationConfig `json:"generation_config,omitempty"`
 }
 
-type TextToSpeechInputMultiStreamingRequest struct {
-	ContextID            string            `json:"contextId"`
-	Text                 string            `json:"text"`
-	TryTriggerGeneration bool              `json:"try_trigger_generation"`
-	VoiceSettings        *VoiceSettings    `json:"voice_settings,omitempty"`
-	GenerationConfig     *GenerationConfig `json:"generation_config,omitempty"`
-}
-
 type WsStreamingOutputChannel chan StreamingOutputResponse
 
 // Standard Websocket Client
@@ -101,10 +102,18 @@ func NewClient(ctx context.Context, apiKey string, reqTimeout time.Duration) *Cl
 }
 
 // Multi-Context Websocket Session
-func NewMultiContextSession(ctx context.Context, apiKey string, reqTimeout time.Duration, TextReader chan string, AlignmentResponseChannel chan StreamingOutputResponse, AudioResponsePipe io.Writer, voiceID string, modelID string, req TextToSpeechInputMultiStreamingRequest, queries ...QueryFunc) error {
-	c := &Client{apiKey: apiKey, timeout: reqTimeout, ctx: ctx, activeRequests: make(map[string]struct{})}
+func NewMultiContextSession(ctx context.Context, apiKey string, reqTimeout time.Duration, TextReader chan string, AlignmentResponseChannel chan StreamingOutputMultiCtxResponse, AudioResponsePipe io.Writer, voiceID string, modelID string, req TextToSpeechInputMultiStreamingRequest, queries ...QueryFunc) error {
 
-	err := c.MultiCtxStreamingRequest(TextReader, AlignmentResponseChannel, AudioResponsePipe, voiceID, modelID, req, queries...)
+	c := &MultiClient{
+		apiKey:                   apiKey,
+		timeout:                  reqTimeout,
+		ctx:                      ctx,
+		activeRequests:           make(map[string]struct{}),
+		TextReader:               TextReader,
+		AlignmentResponseChannel: AlignmentResponseChannel,
+	}
+
+	err := c.MultiCtxStreamingRequest(TextReader, AlignmentResponseChannel, AudioResponsePipe, voiceID, modelID, queries...)
 	if err != nil {
 		return err
 	}
@@ -397,51 +406,51 @@ InputWatcher:
 	return nil
 }
 
-func (c *Client) activeContextCount() int {
+func (c *MultiClient) activeContextCount() int {
 	c.cmu.Lock()
 	defer c.cmu.Unlock()
 	return len(c.activeRequests)
 }
 
-func (c *Client) hasMultiCtx(id string) bool {
+func (c *MultiClient) hasMultiCtx(id string) bool {
 	c.cmu.RLock()
 	_, ok := c.activeRequests[id]
 	c.cmu.RUnlock()
 	return ok
 }
 
-func (c *Client) addMultiCtx(id string) {
+func (c *MultiClient) addMultiCtx(id string) {
 	c.cmu.Lock()
 	c.activeRequests[id] = struct{}{}
 	c.cmu.Unlock()
 }
 
-func (c *Client) removeMultiCtx(id string) {
+func (c *MultiClient) removeMultiCtx(id string) {
 	c.cmu.Lock()
 	delete(c.activeRequests, id)
 	c.cmu.Unlock()
 }
 
-func (c *Client) HasCapacity() bool {
+func (c *MultiClient) HasCapacity() bool {
 	c.cmu.RLock()
 	defer c.cmu.RUnlock()
 	return len(c.activeRequests) < MULTI_CONTEXT_MAX_REQUESTS
 }
 
-func (c *Client) MultiCtxStreamingRequest(TextReader chan string, AlignmentResponseChannel chan StreamingOutputResponse, AudioResponsePipe io.Writer, voiceID string, modelID string, req TextToSpeechInputMultiStreamingRequest, queries ...QueryFunc) error {
+func (c *MultiClient) MultiCtxStreamingRequest(TextReader chan string, AlignmentResponseChannel chan StreamingOutputMultiCtxResponse, AudioResponsePipe io.Writer, voiceID string, modelID string, queries ...QueryFunc) error {
 	driverActive := true // Driver shut down?
 	driverError := false // Unexpected errors
 
-	// Eval context and capacity
-	if !c.hasMultiCtx(req.ContextID) {
-		if c.activeContextCount() >= MULTI_CONTEXT_MAX_REQUESTS {
-			return fmt.Errorf("active requests reached: %d", MULTI_CONTEXT_MAX_REQUESTS)
-		}
-		c.addMultiCtx(req.ContextID)
-	}
+	// // Eval context and capacity
+	// if !c.hasMultiCtx(req.ContextID) {
+	// 	if c.activeContextCount() >= MULTI_CONTEXT_MAX_REQUESTS {
+	// 		return fmt.Errorf("active requests reached: %d", MULTI_CONTEXT_MAX_REQUESTS)
+	// 	}
+	// 	c.addMultiCtx(req.ContextID)
+	// }
 
 	// Make request
-	url := fmt.Sprintf("%s/text-to-speech/%s/multi-stream-input?model_id=%s", ELEVEN_BASEURL_WSS, voiceID, modelID)
+	url := fmt.Sprintf("%s/text-to-speech/%s/multi-stream-input?model_id=%s&inactivity_timeout=180&sync_alignment=true", ELEVEN_BASEURL_WSS, voiceID, modelID)
 	headers := http.Header{}
 	headers.Add("Accept", "*/*")
 	headers.Add("Content-Type", JSON_CONTENT_TYPE)
@@ -466,8 +475,21 @@ func (c *Client) MultiCtxStreamingRequest(TextReader chan string, AlignmentRespo
 	}
 	defer conn.Close()
 
-	// Send initial request
-	if err := conn.WriteJSON(req); err != nil {
+	// Send initialization request and close initialization context
+	var initReq TextToSpeechInputMultiStreamingRequest
+	initCtx := cuid2.Generate()
+	initReq = TextToSpeechInputMultiStreamingRequest{
+		Text:      " ",
+		ContextID: initCtx,
+	}
+	if err := conn.WriteJSON(initReq); err != nil {
+		return err
+	}
+	initReq = TextToSpeechInputMultiStreamingRequest{
+		CloseContext: true,
+		ContextID:    initCtx,
+	}
+	if err := conn.WriteJSON(initReq); err != nil {
 		return err
 	}
 
@@ -490,7 +512,7 @@ func (c *Client) MultiCtxStreamingRequest(TextReader chan string, AlignmentRespo
 					return
 				}
 				var input StreamingInputResponse
-				var response StreamingOutputResponse
+				var response StreamingOutputMultiCtxResponse
 				if err := conn.ReadJSON(&input); err != nil {
 					if driverActive {
 						errCh <- err
@@ -515,7 +537,7 @@ func (c *Client) MultiCtxStreamingRequest(TextReader chan string, AlignmentRespo
 				}
 
 				// Send non-audio via the response channel
-				response = StreamingOutputResponse{
+				response = StreamingOutputMultiCtxResponse{
 					IsFinal:             input.IsFinal,
 					NormalizedAlignment: input.NormalizedAlignment,
 					Alignment:           input.Alignment,
@@ -561,7 +583,7 @@ InputWatcher:
 	// Errors?
 	select {
 	case readErr := <-errCh:
-		c.removeMultiCtx(req.ContextID)
+		//c.removeMultiCtx(req.ContextID)
 		if driverActive || driverError {
 			// Only send if the driver is active or the unexpected error flag is active
 			return readErr
@@ -570,7 +592,7 @@ InputWatcher:
 		}
 	default:
 	}
-	c.removeMultiCtx(req.ContextID)
+	//c.removeMultiCtx(req.ContextID)
 
 	return nil
 }
