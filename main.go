@@ -233,12 +233,28 @@ func SharedVoices(apiKey string, params ListVoicesParams) (*ListVoicesResponse, 
 	//https://api.elevenlabs.io/v1/shared-voices
 }
 
-func ValidateLanguageAndModel(apiKey string, voiceId string) (*GetVoiceVoice, error) {
-	sv, err := GetVoice(apiKey, voiceId)
+func ValidateLanguageAndModel(apiKey string, voiceId string, modelName string) (bool, error) {
+	// Voice exists?
+	gv, err := GetVoice(apiKey, voiceId)
 	if err != nil {
-		return nil, fmt.Errorf("creating request: %w", err)
+		return false, fmt.Errorf("creating request: %w", err)
 	}
-	return sv, nil
+	if gv.VoiceID == "" {
+		return false, fmt.Errorf("voice not found")
+	}
+
+	// Does voice support the model?
+	voiceSupportsModel := false
+	for _, s := range gv.HighQualityBaseModelIDs {
+		if s == modelName {
+			voiceSupportsModel = true
+		}
+	}
+	if !voiceSupportsModel {
+		return false, fmt.Errorf("voice does not support the model specified")
+	}
+
+	return true, nil
 }
 
 // Standard Websocket Request
