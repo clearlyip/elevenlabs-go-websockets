@@ -415,6 +415,7 @@ InputWatcher:
 			default:
 				ch = &TextToSpeechInputMultiStreamingRequest{Text: chunk, ContextID: multiCtx}
 			}
+			debug("Sending chunk", ch)
 			if err := conn.WriteJSON(ch); err != nil {
 				errCh <- err
 			}
@@ -423,6 +424,7 @@ InputWatcher:
 			} else {
 				break InputWatcher
 			}
+			debug("Sending chunk", ch)
 			if err := conn.WriteJSON(ch); err != nil {
 				errCh <- err
 				break InputWatcher
