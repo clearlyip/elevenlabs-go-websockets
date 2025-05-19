@@ -108,6 +108,20 @@ func NewMultiClient(ctx context.Context, apiKey string, reqTimeout time.Duration
 	return c
 }
 
+func GetUserCapacity(apiKey string) (*UserAndCapacity, error) {
+	u, err := User(apiKey)
+	if err != nil {
+		return nil, err
+	}
+	sub := u.Subscription
+
+	return &UserAndCapacity{
+		Subscription: u.Subscription,
+		HasCapacity: sub.CharacterCount <= sub.CharacterLimit ||
+			sub.CanExtendCharacterLimit,
+	}, nil
+}
+
 // API Get user
 func User(apiKey string) (*UserData, error) {
 	//uri := strings.Replace(c.API.URI, ":route", route, -1)
