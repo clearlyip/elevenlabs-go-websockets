@@ -402,8 +402,10 @@ InputWatcher:
 			if !ok || !driverActive {
 				break InputWatcher
 			}
+			final := false
 			var ch *TextToSpeechInputMultiStreamingRequest
 			if chunk == "" {
+				final = true
 				ch = &TextToSpeechInputMultiStreamingRequest{Flush: true, ContextID: multiCtx}
 			} else {
 				ch = &TextToSpeechInputMultiStreamingRequest{Text: chunk, ContextID: multiCtx}
@@ -411,8 +413,17 @@ InputWatcher:
 			}
 			if err := conn.WriteJSON(ch); err != nil {
 				errCh <- err
+			}
+			if final {
+				ch = &TextToSpeechInputMultiStreamingRequest{CloseSocket: true}
+			} else {
 				break InputWatcher
 			}
+			if err := conn.WriteJSON(ch); err != nil {
+				errCh <- err
+				break InputWatcher
+			}
+
 		}
 	}
 
