@@ -374,7 +374,7 @@ InputWatcher:
 			if !ok || !driverActive {
 				break InputWatcher
 			}
-			ch := &TextToSpeechInputStreamingRequest{Text: chunk, ContextID: multiCtx}
+			ch := &TextToSpeechInputMultiStreamingRequest{Text: chunk, ContextID: multiCtx}
 			if err := conn.WriteJSON(ch); err != nil {
 				errCh <- err
 				break InputWatcher
