@@ -406,12 +406,14 @@ InputWatcher:
 			}
 			final := false
 			var ch *TextToSpeechInputMultiStreamingRequest
-			if chunk == CLOSURE_MARKER {
+			switch {
+			case chunk == CLOSURE_MARKER:
 				final = true
 				ch = &TextToSpeechInputMultiStreamingRequest{Flush: true, ContextID: multiCtx}
-			} else {
+			case chunk == FLUSH_MARKER:
+				ch = &TextToSpeechInputMultiStreamingRequest{Flush: true, ContextID: multiCtx}
+			default:
 				ch = &TextToSpeechInputMultiStreamingRequest{Text: chunk, ContextID: multiCtx}
-
 			}
 			if err := conn.WriteJSON(ch); err != nil {
 				errCh <- err
