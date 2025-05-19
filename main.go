@@ -161,7 +161,7 @@ func User(apiKey string) (*UserData, error) {
 }
 
 func GetVoice(apiKey string, voiceId string) (*GetVoiceVoice, error) {
-	url := fmt.Sprintf("%s/voices?voice_id=%s", ELEVEN_BASEURL_HTTPS, voiceId)
+	url := fmt.Sprintf("%s/voices/%s", ELEVEN_BASEURL_HTTPS, voiceId)
 
 	req, err := http.NewRequest(http.MethodGet, url, nil)
 	if err != nil {

@@ -150,7 +150,7 @@ type VoiceVerifiedLanguage struct {
 }
 
 type GetVoiceVoice struct {
-	GetVoiceVoiceID         string                     `json:"voice_id"`
+	VoiceID                 string                     `json:"voice_id"`
 	Name                    string                     `json:"name"`
 	Samples                 []GetVoiceSample           `json:"samples"`
 	Category                string                     `json:"category"`
@@ -163,10 +163,10 @@ type GetVoiceVoice struct {
 	Sharing                 GetVoiceSharing            `json:"sharing"`
 	HighQualityBaseModelIDs []string                   `json:"high_quality_base_model_ids"`
 	VerifiedLanguages       []GetVoiceVerifiedLanguage `json:"verified_languages"`
-	SafetyControl           string                     `json:"safety_control"`
+	SafetyControl           *string                    `json:"safety_control"`
 	VoiceVerification       GetVoiceVoiceVerification  `json:"voice_verification"`
-	PermissionOnResource    string                     `json:"permission_on_resource"`
-	IsOwner                 bool                       `json:"is_owner"`
+	PermissionOnResource    *string                    `json:"permission_on_resource"`
+	IsOwner                 *bool                      `json:"is_owner"`
 	IsLegacy                bool                       `json:"is_legacy"`
 	IsMixed                 bool                       `json:"is_mixed"`
 	CreatedAtUnix           int64                      `json:"created_at_unix"`
@@ -202,13 +202,12 @@ type GetVoiceFineTuning struct {
 	Language                               string                        `json:"language"`
 	Progress                               map[string]float64            `json:"progress"`
 	Message                                map[string]string             `json:"message"`
-	DatasetDurationSeconds                 float64                       `json:"dataset_duration_seconds"`
+	DatasetDurationSeconds                 *float64                      `json:"dataset_duration_seconds"`
 	VerificationAttempts                   []GetVoiceVerificationAttempt `json:"verification_attempts"`
 	SliceIDs                               []string                      `json:"slice_ids"`
-	ManualVerification                     GetVoiceManualVerification    `json:"manual_verification"`
+	ManualVerification                     *GetVoiceManualVerification   `json:"manual_verification"`
 	MaxVerificationAttempts                int                           `json:"max_verification_attempts"`
 	NextMaxVerificationAttemptsResetUnixMs int64                         `json:"next_max_verification_attempts_reset_unix_ms"`
-	FinetuningState                        map[string]string             `json:"finetuning_state"`
 }
 
 type GetVoiceVerificationAttempt struct {
@@ -243,24 +242,26 @@ type GetVoiceManualVerificationFile struct {
 }
 
 type GetVoiceLabels struct {
-	Accent      string `json:"accent"`
+	Language    string `json:"language"`
+	Descriptive string `json:"descriptive"`
 	Age         string `json:"age"`
-	Description string `json:"description"`
 	Gender      string `json:"gender"`
+	Accent      string `json:"accent"`
 	UseCase     string `json:"use_case"`
+	Locale      string `json:"locale"`
 }
 
 type GetVoiceSettings struct {
-	Stability       int  `json:"stability"`
-	SimilarityBoost int  `json:"similarity_boost"`
-	Style           int  `json:"style"`
-	UseSpeakerBoost bool `json:"use_speaker_boost"`
-	Speed           int  `json:"speed"`
+	Stability       float64 `json:"stability"`
+	SimilarityBoost float64 `json:"similarity_boost"`
+	Style           float64 `json:"style"`
+	UseSpeakerBoost bool    `json:"use_speaker_boost"`
+	Speed           float64 `json:"speed"`
 }
 
 type GetVoiceSharing struct {
 	Status                  string                       `json:"status"`
-	HistoryItemSampleID     string                       `json:"history_item_sample_id"`
+	HistoryItemSampleID     *string                      `json:"history_item_sample_id"`
 	DateUnix                int64                        `json:"date_unix"`
 	WhitelistedEmails       []string                     `json:"whitelisted_emails"`
 	PublicOwnerID           string                       `json:"public_owner_id"`
@@ -269,34 +270,39 @@ type GetVoiceSharing struct {
 	FreeUsersAllowed        bool                         `json:"free_users_allowed"`
 	LiveModerationEnabled   bool                         `json:"live_moderation_enabled"`
 	Rate                    float64                      `json:"rate"`
-	FiatRate                float64                      `json:"fiat_rate"`
+	FiatRate                *float64                     `json:"fiat_rate"`
 	NoticePeriod            int                          `json:"notice_period"`
-	DisableAtUnix           int64                        `json:"disable_at_unix"`
+	DisableAtUnix           *int64                       `json:"disable_at_unix"`
 	VoiceMixingAllowed      bool                         `json:"voice_mixing_allowed"`
 	Featured                bool                         `json:"featured"`
 	Category                string                       `json:"category"`
-	ReaderAppEnabled        bool                         `json:"reader_app_enabled"`
+	ReaderAppEnabled        *bool                        `json:"reader_app_enabled"`
 	ImageURL                string                       `json:"image_url"`
-	BanReason               string                       `json:"ban_reason"`
+	BanReason               *string                      `json:"ban_reason"`
 	LikedByCount            int                          `json:"liked_by_count"`
 	ClonedByCount           int                          `json:"cloned_by_count"`
 	Name                    string                       `json:"name"`
 	Description             string                       `json:"description"`
 	Labels                  GetVoiceSharingLabels        `json:"labels"`
 	ReviewStatus            string                       `json:"review_status"`
-	ReviewMessage           string                       `json:"review_message"`
+	ReviewMessage           *string                      `json:"review_message"`
 	EnabledInLibrary        bool                         `json:"enabled_in_library"`
-	InstagramUsername       string                       `json:"instagram_username"`
-	TwitterUsername         string                       `json:"twitter_username"`
-	YouTubeUsername         string                       `json:"youtube_username"`
-	TikTokUsername          string                       `json:"tiktok_username"`
-	ModerationCheck         GetVoiceModerationCheck      `json:"moderation_check"`
+	InstagramUsername       *string                      `json:"instagram_username"`
+	TwitterUsername         *string                      `json:"twitter_username"`
+	YouTubeUsername         *string                      `json:"youtube_username"`
+	TikTokUsername          *string                      `json:"tiktok_username"`
+	ModerationCheck         *GetVoiceModerationCheck     `json:"moderation_check"`
 	ReaderRestrictedOn      []GetVoiceRestrictedResource `json:"reader_restricted_on"`
 }
 
 type GetVoiceSharingLabels struct {
-	Accent string `json:"accent"`
-	Gender string `json:"gender"`
+	Language    string `json:"language"`
+	Descriptive string `json:"descriptive"`
+	Age         string `json:"age"`
+	Gender      string `json:"gender"`
+	Accent      string `json:"accent"`
+	UseCase     string `json:"use_case"`
+	Locale      string `json:"locale"`
 }
 
 type GetVoiceModerationCheck struct {
@@ -329,6 +335,6 @@ type GetVoiceVoiceVerification struct {
 	IsVerified                bool                          `json:"is_verified"`
 	VerificationFailures      []string                      `json:"verification_failures"`
 	VerificationAttemptsCount int                           `json:"verification_attempts_count"`
-	Language                  string                        `json:"language"`
+	Language                  *string                       `json:"language"`
 	VerificationAttempts      []GetVoiceVerificationAttempt `json:"verification_attempts"`
 }
