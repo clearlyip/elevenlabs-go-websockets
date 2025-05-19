@@ -160,6 +160,42 @@ func User(apiKey string) (*UserData, error) {
 	return &r, nil
 }
 
+func GetVoice(apiKey string, voiceId string) (*GetVoiceVoice, error) {
+	url := fmt.Sprintf("%s/voices?voice_id=%s", ELEVEN_BASEURL_HTTPS, voiceId)
+
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("creating request: %w", err)
+	}
+	req.Header.Set("xi-api-key", apiKey)
+
+	client := &http.Client{
+		Timeout: 1 * time.Second,
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	var r GetVoiceVoice
+	err = json.Unmarshal(body, &r)
+	if err != nil {
+		return nil, err
+	}
+
+	return &r, nil
+}
+
 func SharedVoices(apiKey string, params ListVoicesParams) (*ListVoicesResponse, error) {
 	url := fmt.Sprintf("%s/shared-voices", ELEVEN_BASEURL_HTTPS)
 
@@ -197,8 +233,8 @@ func SharedVoices(apiKey string, params ListVoicesParams) (*ListVoicesResponse, 
 	//https://api.elevenlabs.io/v1/shared-voices
 }
 
-func ValidateLanguageAndModel(apiKey string, voiceId string) (*ListVoicesResponse, error) {
-	sv, err := SharedVoices(apiKey, ListVoicesParams{Search: voiceId})
+func ValidateLanguageAndModel(apiKey string, voiceId string) (*GetVoiceVoice, error) {
+	sv, err := GetVoice(apiKey, voiceId)
 	if err != nil {
 		return nil, fmt.Errorf("creating request: %w", err)
 	}
