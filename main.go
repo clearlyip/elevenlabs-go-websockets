@@ -297,9 +297,8 @@ func (c *Client) StreamingRequest(TextReader chan string, AlignmentResponseChann
 	defer conn.Close()
 
 	initReq := TextToSpeechInputMultiStreamingRequest{
-		Text:          " ",
-		ContextID:     multiCtx,
-		VoiceSettings: req.VoiceSettings,
+		Text:      " ",
+		ContextID: multiCtx,
 	}
 
 	// Send initial request
