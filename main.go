@@ -100,12 +100,15 @@ func NewClient(ctx context.Context, apiKey string, reqTimeout time.Duration) *Cl
 	return &Client{apiKey: apiKey, timeout: reqTimeout, ctx: ctx}
 }
 
-// Multi-Context Websocket Client
-func NewMultiClient(ctx context.Context, apiKey string, reqTimeout time.Duration, TextReader chan string, AlignmentResponseChannel chan StreamingOutputResponse, AudioResponsePipe io.Writer, voiceID string, modelID string, req TextToSpeechInputMultiStreamingRequest, queries ...QueryFunc) *Client {
+// Multi-Context Websocket Session
+func NewMultiContextSession(ctx context.Context, apiKey string, reqTimeout time.Duration, TextReader chan string, AlignmentResponseChannel chan StreamingOutputResponse, AudioResponsePipe io.Writer, voiceID string, modelID string, req TextToSpeechInputMultiStreamingRequest, queries ...QueryFunc) error {
 	c := &Client{apiKey: apiKey, timeout: reqTimeout, ctx: ctx, activeRequests: make(map[string]struct{})}
 
-	// MultiCtxStreamingRequest(TextReader chan string, AlignmentResponseChannel chan StreamingOutputResponse, AudioResponsePipe io.Writer, voiceID string, modelID string, req TextToSpeechInputMultiStreamingRequest, queries ...QueryFunc)
-	return c
+	err := c.MultiCtxStreamingRequest(TextReader, AlignmentResponseChannel, AudioResponsePipe, voiceID, modelID, req, queries...)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func GetUserCapacity(apiKey string) (*UserAndCapacity, error) {
@@ -234,10 +237,9 @@ func SharedVoices(apiKey string, params ListVoicesParams) (*ListVoicesResponse, 
 }
 
 func ValidateLanguageAndModel(apiKey string, voiceId string, modelName string) (bool, error) {
-	// Voice exists?
-	gv, err := GetVoice(apiKey, voiceId)
+	gv, err := GetVoice(apiKey, voiceId) // Voice exists?
 	if err != nil {
-		return false, fmt.Errorf("creating request: %w", err)
+		return false, fmt.Errorf("voice lookup failed")
 	}
 	if gv.VoiceID == "" {
 		return false, fmt.Errorf("voice not found")
