@@ -25,6 +25,7 @@ const ELEVEN_BASEURL_HTTPS = "https://api.elevenlabs.io/v1"
 const ELEVEN_BASEURL_WSS = "wss://api.elevenlabs.io/v1"
 const MULTI_CONTEXT_MAX_REQUESTS = 5
 const STD_MAX_REQUESTS = 1
+const CLOSURE_MARKER = "\x1F"
 
 type Client struct {
 	apiKey  string
@@ -404,7 +405,7 @@ InputWatcher:
 			}
 			final := false
 			var ch *TextToSpeechInputMultiStreamingRequest
-			if chunk == "" {
+			if chunk == CLOSURE_MARKER {
 				final = true
 				ch = &TextToSpeechInputMultiStreamingRequest{Flush: true, ContextID: multiCtx}
 			} else {
