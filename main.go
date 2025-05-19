@@ -296,10 +296,14 @@ func (c *Client) StreamingRequest(TextReader chan string, AlignmentResponseChann
 	}
 	defer conn.Close()
 
+	fmt.Println("🎲🎲🎲 Connected to Eleven Labs TTS WebSocket")
+
 	initReq := TextToSpeechInputMultiStreamingRequest{
 		Text:      " ",
 		ContextID: multiCtx,
 	}
+
+	fmt.Println("🎲🎲🎲 Sending initialization request", "initReq", initReq)
 
 	// Send initial request
 	if err := conn.WriteJSON(initReq); err != nil {
