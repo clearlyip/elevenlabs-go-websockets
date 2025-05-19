@@ -322,8 +322,9 @@ func (c *Client) StreamingRequest(TextReader chan string, AlignmentResponseChann
 	debug("Connected to Eleven Labs TTS WebSocket")
 
 	initReq := TextToSpeechInputMultiStreamingRequest{
-		Text:      " ",
-		ContextID: multiCtx,
+		Text:          " ",
+		ContextID:     multiCtx,
+		VoiceSettings: req.VoiceSettings,
 	}
 
 	debug("Sending initialization request", initReq)
