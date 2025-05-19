@@ -2,7 +2,7 @@
 // 		- Streaming Websocket: wss://api.elevenlabs.io/v1/text-to-speech/:voice_id/stream-input
 // 		- Multi-Context Websocket: wss://api.elevenlabs.io/v1/text-to-speech/:voice_id/multi-stream-input
 
-package elevenlabs_websockets
+package elevenlabs
 
 import (
 	"context"
@@ -101,8 +101,11 @@ func NewClient(ctx context.Context, apiKey string, reqTimeout time.Duration) *Cl
 }
 
 // Multi-Context Websocket Client
-func NewMultiClient(ctx context.Context, apiKey string, reqTimeout time.Duration) *Client {
-	return &Client{apiKey: apiKey, timeout: reqTimeout, ctx: ctx, activeRequests: make(map[string]struct{})}
+func NewMultiClient(ctx context.Context, apiKey string, reqTimeout time.Duration, TextReader chan string, AlignmentResponseChannel chan StreamingOutputResponse, AudioResponsePipe io.Writer, voiceID string, modelID string, req TextToSpeechInputMultiStreamingRequest, queries ...QueryFunc) *Client {
+	c := &Client{apiKey: apiKey, timeout: reqTimeout, ctx: ctx, activeRequests: make(map[string]struct{})}
+
+	// MultiCtxStreamingRequest(TextReader chan string, AlignmentResponseChannel chan StreamingOutputResponse, AudioResponsePipe io.Writer, voiceID string, modelID string, req TextToSpeechInputMultiStreamingRequest, queries ...QueryFunc)
+	return c
 }
 
 // API Get user

@@ -1,4 +1,4 @@
-package elevenlabs_websockets
+package elevenlabs
 
 type UserData struct {
 	UserID                         string             `json:"user_id"`
