@@ -282,8 +282,6 @@ func debug(prefix string, args ...interface{}) {
 			}
 		}
 	}
-
-	// join with spaces (or whatever separator you like)
 	fmt.Println(strings.Join(parts, " "))
 }
 
