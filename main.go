@@ -266,7 +266,7 @@ func ValidateLanguageAndModel(apiKey string, voiceId string, modelName string) (
 	return true, nil
 }
 
-func debug(prefix string, args ...interface{}) {
+func debug(prefix string, args ...any) {
 	parts := []string{"🎲🎲🎲 " + prefix}
 
 	for _, arg := range args {
