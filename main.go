@@ -407,27 +407,26 @@ InputWatcher:
 			final := false
 			var ch *TextToSpeechInputMultiStreamingRequest
 			switch {
-			// case chunk == CLOSURE_MARKER:
-			// 	final = true
-			// 	ch = &TextToSpeechInputMultiStreamingRequest{Flush: true, ContextID: multiCtx}
-			// case chunk == FLUSH_MARKER:
-			// 	ch = &TextToSpeechInputMultiStreamingRequest{Flush: true, ContextID: multiCtx}
+			case chunk == CLOSURE_MARKER:
+				final = true
+				ch = &TextToSpeechInputMultiStreamingRequest{Flush: true, ContextID: multiCtx}
+			case chunk == FLUSH_MARKER:
+				ch = &TextToSpeechInputMultiStreamingRequest{Flush: true, ContextID: multiCtx}
 			default:
 				ch = &TextToSpeechInputMultiStreamingRequest{Text: chunk, ContextID: multiCtx}
 			}
 			debug("Sending chunk", ch)
 			if err := conn.WriteJSON(ch); err != nil {
 				errCh <- err
+				break InputWatcher
 			}
 			if final {
 				ch = &TextToSpeechInputMultiStreamingRequest{CloseSocket: true}
-			} else {
-				break InputWatcher
-			}
-			debug("Sending chunk2", ch)
-			if err := conn.WriteJSON(ch); err != nil {
-				errCh <- err
-				break InputWatcher
+				debug("Sending finalization chunk", ch)
+				if err := conn.WriteJSON(ch); err != nil {
+					errCh <- err
+					break InputWatcher
+				}
 			}
 
 		}
