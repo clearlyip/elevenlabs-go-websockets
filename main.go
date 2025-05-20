@@ -267,8 +267,7 @@ func ValidateLanguageAndModel(apiKey string, voiceId string, modelName string) (
 }
 
 func debug(prefix string, args ...interface{}) {
-	parts := []string{prefix}
-	parts = append(parts, "🎲🎲🎲 ")
+	parts := []string{"🎲🎲🎲 " + prefix}
 
 	for _, arg := range args {
 		switch v := arg.(type) {
@@ -410,19 +409,21 @@ InputWatcher:
 			case chunk == CLOSURE_MARKER:
 				final = true
 				ch = &TextToSpeechInputMultiStreamingRequest{Flush: true, ContextID: multiCtx}
+				debug("Sending context closure", ch)
 			case chunk == FLUSH_MARKER:
 				ch = &TextToSpeechInputMultiStreamingRequest{Flush: true, ContextID: multiCtx}
+				debug("Sending flush", ch)
 			default:
 				ch = &TextToSpeechInputMultiStreamingRequest{Text: chunk, ContextID: multiCtx}
+				debug("Sending chunk", ch)
 			}
-			debug("Sending chunk", ch)
 			if err := conn.WriteJSON(ch); err != nil {
 				errCh <- err
 				break InputWatcher
 			}
 			if final {
 				ch = &TextToSpeechInputMultiStreamingRequest{CloseSocket: true}
-				debug("Sending finalization chunk", ch)
+				debug("Sending socket closure", ch)
 				if err := conn.WriteJSON(ch); err != nil {
 					errCh <- err
 					break InputWatcher
