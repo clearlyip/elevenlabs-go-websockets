@@ -34,16 +34,6 @@ type Client struct {
 	ctx     context.Context
 }
 
-type MultiClient struct {
-	apiKey                   string
-	timeout                  time.Duration
-	ctx                      context.Context
-	activeRequests           map[string]struct{} // Active multi-context requests
-	cmu                      sync.RWMutex
-	TextReader               chan string
-	AlignmentResponseChannel chan StreamingOutputMultiCtxResponse
-}
-
 type VoiceSettings struct {
 	SimilarityBoost float32 `json:"similarity_boost"`
 	Stability       float32 `json:"stability"`
@@ -97,25 +87,6 @@ type WsStreamingOutputChannel chan StreamingOutputResponse
 // Standard Websocket Client
 func NewClient(ctx context.Context, apiKey string, reqTimeout time.Duration) *Client {
 	return &Client{apiKey: apiKey, timeout: reqTimeout, ctx: ctx}
-}
-
-// Multi-Context Websocket Session
-func NewMultiContextSession(ctx context.Context, apiKey string, reqTimeout time.Duration, TextReader chan string, AlignmentResponseChannel chan StreamingOutputMultiCtxResponse, AudioResponsePipe io.Writer, voiceID string, modelID string, req TextToSpeechInputMultiStreamingRequest, queries ...QueryFunc) error {
-
-	c := &MultiClient{
-		apiKey:                   apiKey,
-		timeout:                  reqTimeout,
-		ctx:                      ctx,
-		activeRequests:           make(map[string]struct{}),
-		TextReader:               TextReader,
-		AlignmentResponseChannel: AlignmentResponseChannel,
-	}
-
-	err := c.MultiCtxStreamingRequest(TextReader, AlignmentResponseChannel, AudioResponsePipe, voiceID, modelID, queries...)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func GetUserCapacity(apiKey string) (*UserAndCapacity, error) {
